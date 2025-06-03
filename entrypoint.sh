@@ -21,13 +21,17 @@ if [ -z "$INPUT_APP" ]; then
   exit 1
 fi
 
+export OTP="$([ -n "$INPUT_OTP_SEED" ] && oathtool -b --totp ${INPUT_OTP_SEED})"
+
 export APTIBLE_AUTH_ROOT_URL="$INPUT_AUTH_ROOT_URL"
 export APTIBLE_API_ROOT_URL="$INPUT_API_ROOT_URL"
 export APTIBLE_REMOTE="$INPUT_APTIBLE_REMOTE"
 
 aptible login \
   --email "$INPUT_USERNAME" \
-  --password "$INPUT_PASSWORD"
+  --password "$INPUT_PASSWORD" \
+  --otp-token "$OTP" \
+  --lifetime "$INPUT_LIFETIME"
 
 if ! APTIBLE_OUTPUT_FORMAT=json aptible apps | jq -e ".[] | select(.handle == \"$INPUT_APP\") | select(.environment.handle == \"$INPUT_ENVIRONMENT\")" > /dev/null; then
   echo "Could not find app $INPUT_APP in $INPUT_ENVIRONMENT" >&2
