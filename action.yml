@@ -55,6 +55,10 @@ inputs:
     description: 'Aptible token lifetime'
     required: False
     default: 12h
+  login_retries:
+    description: 'Number of login retries before failing'
+    required: False
+    default: 1
 outputs:
   status:
     description: "The Success/Failure of the action"
