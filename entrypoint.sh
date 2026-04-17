@@ -21,17 +21,31 @@ if [ -z "$INPUT_APP" ]; then
   exit 1
 fi
 
-export OTP="$([ -n "$INPUT_OTP_SEED" ] && oathtool -b --totp ${INPUT_OTP_SEED})"
+function otp_token() {
+  echo "$([ -n "$INPUT_OTP_SEED" ] && oathtool -b --totp ${INPUT_OTP_SEED})"
+}
 
 export APTIBLE_AUTH_ROOT_URL="$INPUT_AUTH_ROOT_URL"
 export APTIBLE_API_ROOT_URL="$INPUT_API_ROOT_URL"
 export APTIBLE_REMOTE="$INPUT_APTIBLE_REMOTE"
 
-aptible login \
+ATTEMPT=1
+
+until aptible login \
   --email "$INPUT_USERNAME" \
   --password "$INPUT_PASSWORD" \
-  --otp-token "$OTP" \
+  --otp-token "$(otp_token)" \
   --lifetime "$INPUT_LIFETIME"
+do
+  if [ $ATTEMPT -ge $INPUT_LOGIN_RETRIES ]; then
+    echo "aptible login failed after $MAX_ATTEMPTS attempts."
+    exit 1
+  fi
+
+  echo "aptible login failed. Retrying in 5 seconds... (Attempt $ATTEMPT/$INPUT_LOGIN_RETRIES)"
+  ATTEMPT=$((ATTEMPT+1))
+  sleep 3
+done
 
 if ! APTIBLE_OUTPUT_FORMAT=json aptible apps --environment "${INPUT_ENVIRONMENT}" | jq -e ".[] | select(.handle == \"$INPUT_APP\")" > /dev/null; then
   echo "Could not find app $INPUT_APP in $INPUT_ENVIRONMENT" >&2
