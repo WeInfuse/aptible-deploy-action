@@ -29,6 +29,8 @@ The following inputs can be used as `step.with` keys
 ### Optional input
 
 - `config_variables` - [configuration variables to set](https://www.aptible.com/docs/set-configuration-variables)
+- `otp_seed` - Aptible one-time password seed if required for user
+- `lifetime` - Aptible token lifetime
 
 > [!IMPORTANT]\
 > We do **not** recommend setting `config_variables` inside our github action
@@ -95,6 +97,8 @@ The following inputs can be used as `step.with` keys
   [configuration variables to set](https://www.aptible.com/docs/set-configuration-variables)
 - `docker_repository_url` - Provide docker repository URL which we can display
   in our web UI
+- `otp_seed` - Aptible one-time password seed if required for user
+- `lifetime` - Aptible token lifetime
 
 > [!IMPORTANT]\
 > We do **not** recommend setting `config_variables` inside our github action
