@@ -38,7 +38,7 @@ until aptible login \
   --lifetime "$INPUT_LIFETIME"
 do
   if [ $ATTEMPT -ge $INPUT_LOGIN_RETRIES ]; then
-    echo "aptible login failed after $MAX_ATTEMPTS attempts."
+    echo "aptible login failed after $INPUT_LOGIN_RETRIES attempts."
     exit 1
   fi
 
