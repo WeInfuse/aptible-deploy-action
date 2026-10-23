@@ -25,6 +25,16 @@ function otp_token() {
   echo "$([ -n "$INPUT_OTP_SEED" ] && oathtool -b --totp ${INPUT_OTP_SEED})"
 }
 
+function otp_retry_delay() {
+  local secs_into_window=$(( $(date +%s) % 30 ))
+
+  if [ "$secs_into_window" -eq 0 ]; then
+    echo 1
+  else
+    echo $(( 31 - secs_into_window ))
+  fi
+}
+
 export APTIBLE_AUTH_ROOT_URL="$INPUT_AUTH_ROOT_URL"
 export APTIBLE_API_ROOT_URL="$INPUT_API_ROOT_URL"
 export APTIBLE_REMOTE="$INPUT_APTIBLE_REMOTE"
@@ -43,7 +53,7 @@ do
   fi
 
   if [ -n "$INPUT_OTP_SEED" ]; then
-    DELAY=$(( 30 - $(date +%s) % 30 + 1 ))
+    DELAY=$(otp_retry_delay)
   else
     DELAY=3
   fi
