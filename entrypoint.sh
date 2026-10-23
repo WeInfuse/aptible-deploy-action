@@ -42,9 +42,15 @@ do
     exit 1
   fi
 
-  echo "aptible login failed. Retrying in 5 seconds... (Attempt $ATTEMPT/$INPUT_LOGIN_RETRIES)"
+  if [ -n "$INPUT_OTP_SEED" ]; then
+    DELAY=$(( 30 - $(date +%s) % 30 + 1 ))
+  else
+    DELAY=3
+  fi
+
+  echo "aptible login failed. Retrying in $DELAY seconds... (Attempt $ATTEMPT/$INPUT_LOGIN_RETRIES)"
   ATTEMPT=$((ATTEMPT+1))
-  sleep 3
+  sleep "$DELAY"
 done
 
 if ! APTIBLE_OUTPUT_FORMAT=json aptible apps --environment "${INPUT_ENVIRONMENT}" | jq -e ".[] | select(.handle == \"$INPUT_APP\")" > /dev/null; then
