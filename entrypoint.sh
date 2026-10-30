@@ -21,18 +21,38 @@ if [ -z "$INPUT_APP" ]; then
   exit 1
 fi
 
-function otp_token() {
-  echo "$([ -n "$INPUT_OTP_SEED" ] && oathtool -b --totp ${INPUT_OTP_SEED})"
+function generate_otp() {
+  if ! OTP=$(oathtool -b --totp "$INPUT_OTP_SEED"); then
+    echo "Aborting: oathtool could not generate an OTP from otp_seed" >&2
+    exit 1
+  fi
+
+  if ! [[ "$OTP" =~ ^[0-9]{6}$ ]]; then
+    echo "Aborting: generated OTP is not a 6-digit code" >&2
+    exit 1
+  fi
+}
+
+function aptible_login() {
+  local otp_args=()
+
+  if [ -n "$INPUT_OTP_SEED" ]; then
+    generate_otp
+    otp_args=(--otp-token "$OTP")
+  fi
+
+  aptible login \
+    --email "$INPUT_USERNAME" \
+    --password "$INPUT_PASSWORD" \
+    "${otp_args[@]}" \
+    --lifetime "$INPUT_LIFETIME"
 }
 
 function otp_retry_delay() {
-  local secs_into_window=$(( $(date +%s) % 30 ))
+  local window=30
+  local clock_skew_margin=5
 
-  if [ "$secs_into_window" -eq 0 ]; then
-    echo 1
-  else
-    echo $(( 31 - secs_into_window ))
-  fi
+  echo $(( window + clock_skew_margin - $(date +%s) % window ))
 }
 
 export APTIBLE_AUTH_ROOT_URL="$INPUT_AUTH_ROOT_URL"
@@ -41,11 +61,7 @@ export APTIBLE_REMOTE="$INPUT_APTIBLE_REMOTE"
 
 ATTEMPT=1
 
-until aptible login \
-  --email "$INPUT_USERNAME" \
-  --password "$INPUT_PASSWORD" \
-  --otp-token "$(otp_token)" \
-  --lifetime "$INPUT_LIFETIME"
+until aptible_login
 do
   if [ $ATTEMPT -ge $INPUT_LOGIN_RETRIES ]; then
     echo "aptible login failed after $INPUT_LOGIN_RETRIES attempts."

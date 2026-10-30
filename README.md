@@ -110,6 +110,13 @@ The following inputs can be used as `step.with` keys
 
 - `status` - success/failure of the deploy
 
+## Aptible CLI version
+
+The Aptible CLI is pinned in the `Dockerfile` (`CLI_FILE`) rather than using
+`latest`, so login behavior only changes when the pin is bumped. To upgrade,
+change the version in `CLI_FILE` to a published
+`aptible-cli-go_<version>_debian_amd64.deb`.
+
 ## Example using Direct Docker Image Deploy
 
 Assumes you have set
