@@ -37,8 +37,8 @@ jobs:
           fi
 
           curl -fsSI "${BASE_URL}/aptible-cli-go_${latest}_debian_amd64.deb" > /dev/null
-          if git ls-remote --exit-code --heads origin "aptible-cli-${latest}" > /dev/null; then
-            echo "Branch aptible-cli-${latest} already exists"
+          if [[ -n "$(gh pr list --head "aptible-cli-${latest}" --state all --json number --jq '.[].number')" ]]; then
+            echo "A PR for aptible-cli-${latest} already exists"
             exit 0
           fi
 
@@ -56,7 +56,7 @@ jobs:
           git checkout -b "aptible-cli-${LATEST}"
           sed -i "s/aptible-cli-go_${CURRENT}_debian_amd64.deb/aptible-cli-go_${LATEST}_debian_amd64.deb/" Dockerfile
           git commit -am "Bump Aptible CLI to ${LATEST}"
-          git push -u origin "aptible-cli-${LATEST}"
+          git push --force -u origin "aptible-cli-${LATEST}"
           gh pr create --base master --head "aptible-cli-${LATEST}" \
             --title "Bump Aptible CLI to ${LATEST}" \
             --body "Upgrade the pinned Aptible Go CLI from ${CURRENT} to ${LATEST}.
