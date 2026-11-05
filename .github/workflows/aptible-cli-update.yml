@@ -1,0 +1,64 @@
+name: Update Aptible CLI
+
+on:
+  schedule:
+    - cron: '0 14 * * 5'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BASE_URL: https://omnibus-aptible-toolbelt.s3.us-east-1.amazonaws.com/release/aptible-cli-go
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Find newer CLI version
+        id: version
+        run: |
+          current=$(sed -nE 's/.*aptible-cli-go_([0-9.]+)_debian_amd64\.deb.*/\1/p' Dockerfile)
+          curl -fsSL -o latest.deb "${BASE_URL}/aptible-cli-go_latest_debian_amd64.deb"
+          latest=$(dpkg-deb -f latest.deb Version)
+          rm latest.deb
+          echo "current=${current} latest=${latest}"
+
+          if [[ -z "${current}" || -z "${latest}" ]]; then
+            echo "Could not determine versions" >&2
+            exit 1
+          fi
+          if [[ "${current}" == "${latest}" || "$(printf '%s\n%s\n' "${current}" "${latest}" | sort -V | tail -1)" != "${latest}" ]]; then
+            echo "Already up to date"
+            exit 0
+          fi
+
+          curl -fsSI "${BASE_URL}/aptible-cli-go_${latest}_debian_amd64.deb" > /dev/null
+          if git ls-remote --exit-code --heads origin "aptible-cli-${latest}" > /dev/null; then
+            echo "Branch aptible-cli-${latest} already exists"
+            exit 0
+          fi
+
+          echo "current=${current}" >> "${GITHUB_OUTPUT}"
+          echo "latest=${latest}" >> "${GITHUB_OUTPUT}"
+
+      - name: Open upgrade PR
+        if: steps.version.outputs.latest != ''
+        env:
+          CURRENT: ${{ steps.version.outputs.current }}
+          LATEST: ${{ steps.version.outputs.latest }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "aptible-cli-${LATEST}"
+          sed -i "s/aptible-cli-go_${CURRENT}_debian_amd64.deb/aptible-cli-go_${LATEST}_debian_amd64.deb/" Dockerfile
+          git commit -am "Bump Aptible CLI to ${LATEST}"
+          git push -u origin "aptible-cli-${LATEST}"
+          gh pr create --base master --head "aptible-cli-${LATEST}" \
+            --title "Bump Aptible CLI to ${LATEST}" \
+            --body "Upgrade the pinned Aptible Go CLI from ${CURRENT} to ${LATEST}.
+
+          After merging: build-test the image, cut the next vN tag, and bump the SHA in the consumer deploy workflows."
