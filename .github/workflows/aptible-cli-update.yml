@@ -37,7 +37,8 @@ jobs:
           fi
 
           curl -fsSI "${BASE_URL}/aptible-cli-go_${latest}_debian_amd64.deb" > /dev/null
-          if [[ -n "$(gh pr list --head "aptible-cli-${latest}" --state all --json number --jq '.[].number')" ]]; then
+          existing=$(gh pr list --head "aptible-cli-${latest}" --state all --json number --jq '.[].number')
+          if [[ -n "${existing}" ]]; then
             echo "A PR for aptible-cli-${latest} already exists"
             exit 0
           fi
