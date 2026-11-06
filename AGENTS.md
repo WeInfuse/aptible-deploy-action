@@ -17,6 +17,8 @@ Guidance for AI coding agents. This is WeInfuse's fork of
 
 - The Go CLI version is pinned in the `Dockerfile` (`CLI_FILE`). Bump it
   deliberately; don't go back to `latest`.
+- `.github/workflows/aptible-cli-update.yml` checks for a newer CLI on Fridays
+  and opens a bump PR. Merging it doesn't cut a release.
 - The Go CLI records a failed "2FA not supplied" login on Aptible for every
   login, and repeated failures lock the account.
 
